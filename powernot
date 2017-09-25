@@ -1,0 +1,84 @@
+#!/bin/bash
+
+TIMER=5
+CHARGING_TIMER=10
+SAFE_TIMER=5
+DANGER_TIMER=2
+CRITICAL_TIMER=1
+
+SAFE=55
+DANGER=54
+CRITICAL=53
+
+SAFE_EXIT=1
+
+BAR_PID=0
+export DISPLAY=:0.0
+
+function launch()
+{
+  echo "Launching i3-nagbar";
+  i3-nagbar -m 'Battery low!' -b 'Hibernate!' 'systemctl hibernate' -b 'Shutdown!' 'systemctl poweroff' > /dev/null 2>&1 &
+  BAR_PID=$!
+  echo "BAR_PID:${BAR_PID}";
+}
+
+function kill()
+{
+  echo "Killing i3-nagbar";
+  if [[ $BAR_PID -ne 0 ]]; then
+    ps -p $BAR_PID | grep "i3-nagbar"
+    if [[ $? -eq 0 ]]; then
+      kill $BAR_PID
+    fi
+    BAR_PID=0
+  fi
+  echo "BAR_PID=${BAR_PID}";
+}
+
+while [[ true ]]; do
+  kill
+
+  if [[ -n $(acpi -b | grep -i discharging) ]]; then
+    
+    remaining=$(acpi -b | grep -Eo "[0-9]+%" | grep -Eo "[0-9]+")
+
+    echo "Remaining Battery: ${remaining}";
+
+    if [[ $remaining -gt $SAFE ]]; then
+      echo "Battery in SAFE";
+      TIMER=${SAFE_TIMER}
+      echo "[SAFE] New Timing: ${TIMER}";
+    else
+      echo "Battery not SAFE";
+      TIMER=${TIMER}
+      echo "[NOT SAFE] New Timing: ${TIMER}";
+
+      if [[ $remaining -le $DANGER ]]; then
+        echo "Battery in DANGER";
+        TIMER=${DANGER_TIMER}
+        echo "[DANGER] New Timing: ${TIMER}";
+        launch
+      fi
+
+      if [[ $remaining -le $CRITICAL ]]; then
+        echo "Battery in CRITICAL";
+        TIMER=${CRITICAL_TIMER}
+        echo "[CRITICAL] New Timing: ${TIMER}";
+        if [[ $SAFE_EXIT ]]; then
+          launch
+        else
+          echo "[CRITICAL] Hibernating system...";
+          systemctl hibernate
+        fi
+      fi
+    fi
+  else
+    echo "Status: Not Discharging";
+    TIMER=${CHARGING_TIMER}
+    echo "Timer: ${TIMER}";
+  fi
+
+  echo "Sleeping: ${TIMER}m";
+  sleep ${TIMER}m
+done
