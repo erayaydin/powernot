@@ -19,9 +19,9 @@ There is 4 modes in tool.
 This mode switches handling with percentage of remaining battery.
 
 ```
-SAFE=55
-DANGER=54
-CRITICAL=53
+SAFE=30
+DANGER=15
+CRITICAL=5
 ```
 
 ### Timers
