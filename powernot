@@ -76,6 +76,10 @@ while [[ true ]]; do
         else
           echo "[CRITICAL] Hibernating system...";
           systemctl hibernate
+          if [[ $? ]]; then
+            echo "Hibernating failed (no swap allocated?). Suspending instead";
+            systemctl suspend
+          fi
         fi
       else
         if [[ $remaining -le $DANGER ]]; then
