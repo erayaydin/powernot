@@ -4,11 +4,11 @@ Power notification tool for i3 window manager.
 
 ## Configuration
 
-You can configure tool with manually editing `powernot` file.
+You can configure some settings by manually editing the `powernot` file.
 
 ### Modes
 
-There is 4 modes in tool.
+There is 4 modes in powernot.
 
 - Charging Mode
 - Discharging Mode
@@ -26,7 +26,7 @@ CRITICAL=5
 
 ### Timers
 
-- TIMER (Discharging default timer)
+- TIMER (current timer depending on current battery state)
 - CHARGING_TIMER (Charging timer)
 - SAFE_TIMER (Discharging safe mode timer)
 - DANGER_TIMER (Discharging danger mode timer)
@@ -40,15 +40,12 @@ DANGER_TIMER=2
 CRITICAL_TIMER=1
 ```
 
-Every mode have different timers for sleeping process. You can change this 
-settings with editing `powernot` file.
+Every mode has different sleeping timers. You can change them by editing the `powernot` file.
 
-### Safe Exit
+### CRITICAL_HIBERNATE
 
 ```
-SAFE_EXIT=1
+CRITICAL_HIBERNATE=1
 ```
 
-There is 2 options for `Critical Mode`. When safe exit is enabled, 
-`critical mode` only shows message; otherwise its `hibernate` system 
-directly.
+There are 2 options for `Critical Mode`. When CRITICAL_HIBERNATE is set, `critical mode` will automatically hibernate the system when the battery capacity drops below the `CRITICAL` value; otherwise it only shows a warning message.
