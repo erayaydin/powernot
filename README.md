@@ -48,4 +48,34 @@ Every mode has different sleeping timers. You can change them by editing the `po
 CRITICAL_HIBERNATE=1
 ```
 
-There are 2 options for `Critical Mode`. When CRITICAL_HIBERNATE is set, `critical mode` will automatically hibernate the system when the battery capacity drops below the `CRITICAL` value; otherwise it only shows a warning message.
+### Using powernot as a systemd service
+Systemd's user mode can be used to autostart and run `powernot` in the background.
+
+First, create a `service` file in `~/.config/systemd/user/powernot.service`. Make sure to replace `USERNAME` with your actual username.
+
+```
+$ cat ~/.config/systemd/user/powernot.service
+[Unit]
+Description=powernot
+
+[Service]
+ExecStart=/home/USERNAME/git/powernot/powernot
+
+[Install]
+WantedBy=default.target
+```
+
+Enable the service if you want the service to be autostarted:
+```
+systemctl --user enable powernot.service
+```
+
+You can also manually start the service (if it has not been autostarted already):
+```
+systemctl --user start powernot.service
+```
+
+To check the current status of the service, run:
+```
+systemctl --user status powernot.service
+```
