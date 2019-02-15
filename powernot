@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DANGER_TEXT="Battery power in danger"
-CRITICAL_TEXT="Battery power in critical"
+DANGER_TEXT="Battery status: DANGER."
+CRITICAL_TEXT="Battery status: CRITICAL!"
 
 TIMER=5
 CHARGING_TIMER=10
@@ -13,12 +13,12 @@ SAFE=30
 DANGER=15
 CRITICAL=5
 
-SAFE_EXIT=1
+CRITICAL_HIBERNATE=1
 
 BAR_PID=0
 export DISPLAY=:0.0
 
-function launch()
+function launch_nagbar()
 {
   echo "Launching i3-nagbar";
 
@@ -31,69 +31,60 @@ function launch()
   fi
 
   text="${text} ($2%)"
-  i3-nagbar -m "$text" -b 'Hibernate!' 'systemctl hibernate' -b 'Shutdown!' 'systemctl poweroff' > /dev/null 2>&1 &
+  i3-nagbar -m "$text" -b 'Suspend' 'systemctl suspend' -b 'Hibernate!' 'systemctl hibernate' -b 'Shutdown!' 'systemctl poweroff' > /dev/null 2>&1 &
   BAR_PID=$!
-  echo "BAR_PID:${BAR_PID}";
+  echo "New BAR_PID: ${BAR_PID}";
 }
 
-function kill()
+function kill_nagbar()
 {
-  echo "Killing i3-nagbar";
   if [[ $BAR_PID -ne 0 ]]; then
     ps -p $BAR_PID | grep "i3-nagbar"
     if [[ $? -eq 0 ]]; then
+      echo "Killing i3-nagbar";
       kill $BAR_PID
     fi
     BAR_PID=0
   fi
-  echo "BAR_PID=${BAR_PID}";
 }
 
 while [[ true ]]; do
-  kill
+  kill_nagbar
 
   if [[ -n $(acpi -b | grep -i discharging) ]]; then
-    
+
     remaining=$(acpi -b | grep -Eo "[0-9]+%" | grep -Eo "[0-9]+")
 
-    echo "Remaining Battery: ${remaining}";
+    echo "Remaining battery: ${remaining}%";
 
     if [[ $remaining -gt $SAFE ]]; then
-      echo "Battery in SAFE";
+      echo "Battery status: SAFE";
       TIMER=${SAFE_TIMER}
-      echo "[SAFE] New Timing: ${TIMER}";
     else
-      echo "Battery not SAFE";
-      TIMER=${TIMER}
-      echo "[NOT SAFE] New Timing: ${TIMER}";
+      echo "Battery status: NOT_SAFE";
+      TIMER=${DANGER_TIMER}
 
       if [[ $remaining -le $CRITICAL ]]; then
-        echo "Battery in CRITICAL";
+        echo "Battery status: CRITICAL";
         TIMER=${CRITICAL_TIMER}
-        echo "[CRITICAL] New Timing: ${TIMER}";
-        if [[ $SAFE_EXIT ]]; then
-          launch "critical" $remaining
-        else
+        if [[ $CRITICAL_HIBERNATE ]]; then
           echo "[CRITICAL] Hibernating system...";
           systemctl hibernate
           if [[ $? ]]; then
             echo "Hibernating failed (no swap allocated?). Suspending instead";
             systemctl suspend
           fi
+        else
+          launch_nagbar "critical" $remaining
         fi
-      else
-        if [[ $remaining -le $DANGER ]]; then
-          echo "Battery in DANGER";
-          TIMER=${DANGER_TIMER}
-          echo "[DANGER] New Timing: ${TIMER}";
-          launch "danger" $remaining
-        fi 
+      elif [[ $remaining -le $DANGER ]]; then
+        echo "Battery status: DANGER";
+        launch_nagbar "danger" $remaining
       fi
     fi
   else
-    echo "Status: Not Discharging";
+    echo "Battery status: Charging";
     TIMER=${CHARGING_TIMER}
-    echo "Timer: ${TIMER}";
   fi
 
   echo "Sleeping: ${TIMER}m";
